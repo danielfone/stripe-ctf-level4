@@ -1,6 +1,7 @@
 package server
 
 import (
+  "bytes"
 	"errors"
 	"fmt"
 	"github.com/gorilla/mux"
@@ -84,7 +85,7 @@ func (s *Server) ListenAndServe(primary string) error {
 					continue
 				}
 
-				s.cluster.PerformFailover()
+				//s.cluster.PerformFailover()
 
 				if s.cluster.State() == "primary" {
 					break
@@ -176,15 +177,29 @@ func (s *Server) joinHandler(w http.ResponseWriter, req *http.Request) {
 // a raw string rather than JSON.
 func (s *Server) sqlHandler(w http.ResponseWriter, req *http.Request) {
 	state := s.cluster.State()
-	if state != "primary" {
-		http.Error(w, "Only the primary can service queries, but this is a "+state, http.StatusBadRequest)
-		return
-	}
+  primary := s.cluster.primary
+  members := s.cluster.members
 
-	query, err := ioutil.ReadAll(req.Body)
+  query, err := ioutil.ReadAll(req.Body)	
 	if err != nil {
 		log.Printf("Couldn't read body: %s", err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
+	}
+
+	log.Printf("Cluster state: primary %v, members %v", primary, members)
+
+	if state != "primary" {
+  	log.Printf("Attempting to proxy to primary: %v", primary)
+    resp, err := s.client.SafePost(primary.ConnectionString, "/sql", bytes.NewReader(query))
+    if err != nil {
+      http.Error(w, "Couldn't proxy response to primary: " + err.Error(), http.StatusServiceUnavailable)
+    }
+    bytes, err := ioutil.ReadAll(resp)
+    if err != nil {
+      http.Error(w, "Couldn't proxy response to primary: " + err.Error(), http.StatusServiceUnavailable)
+    }
+  	w.Write(bytes)
+		return
 	}
 
 	log.Debugf("[%s] Received query: %#v", s.cluster.State(), string(query))
