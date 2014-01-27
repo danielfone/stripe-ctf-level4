@@ -2,7 +2,6 @@ package server
 
 import (
   "bytes"
-	"encoding/json"
 	"fmt"
 	"github.com/goraft/raft"
 	"stripe-ctf.com/sqlcluster/command"
@@ -171,11 +170,14 @@ func (s *Server) Join(leader string) error {
 func (s *Server) joinHandler(w http.ResponseWriter, req *http.Request) {
 	command := &raft.DefaultJoinCommand{}
 
-	if err := json.NewDecoder(req.Body).Decode(&command); err != nil {
-    log.Printf("Error parsing join request: %s", err)
+	if err := util.JSONDecode(req.Body, command); err != nil {
+		log.Printf("Invalid join request: %s", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+
+	log.Printf("Handling join request: %#v", command)
+
 	if _, err := s.raftServer.Do(command); err != nil {
     log.Printf("Error executing join command: %s", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
