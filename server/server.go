@@ -1,6 +1,7 @@
 package server
 
 import (
+  "bytes"
 	"encoding/json"
 	"fmt"
 	"github.com/goraft/raft"
@@ -189,8 +190,24 @@ func (s *Server) sqlHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 	query := string(b)
+  raftServer := s.raftServer
+  leader     := raftServer.Leader()
 
-  log.Printf("Current Leader: %s", s.raftServer.Leader())
+  if raftServer.Name() != leader {
+    leaderCS := raftServer.Peers()[leader].ConnectionString
+    log.Printf("Attempting to proxy to primary: %v", leaderCS)
+    resp, err := s.client.SafePost(leaderCS, "/sql", bytes.NewReader(b))
+    if err != nil {
+      http.Error(w, "Couldn't proxy response to primary: " + err.Error(), http.StatusServiceUnavailable)
+    }
+    bytes, err := ioutil.ReadAll(resp)
+    if err != nil {
+      http.Error(w, "Couldn't proxy response to primary: " + err.Error(), http.StatusServiceUnavailable)
+    }
+    w.Write(bytes)
+    return
+  }
+
 
 	// Execute the command against the Raft server.
 	_, err = s.raftServer.Do(command.NewQueryCommand(query))

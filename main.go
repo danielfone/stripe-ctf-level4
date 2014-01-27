@@ -76,7 +76,7 @@ OPTIONS:
 		os.Exit(1)
 	}
 
-	log.SetVerbose(true)
+	log.SetVerbose(verbose)
 
 	if directory == "" {
 		var err error
@@ -100,8 +100,6 @@ OPTIONS:
   
   raft.RegisterCommand(&command.QueryCommand{})
 
-	raft.SetLogLevel(raft.Trace)
-	log.Print("Raft debugging enabled.")
 
 	rand.Seed(time.Now().UnixNano())
 
