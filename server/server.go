@@ -216,6 +216,7 @@ func (s *Server) sqlHandler(w http.ResponseWriter, req *http.Request) {
 	response, err := s.raftServer.Do(command.NewQueryCommand(query))
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
+    return
 	}
   
   w.Write(response.([]byte))
