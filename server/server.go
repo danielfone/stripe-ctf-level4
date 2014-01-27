@@ -172,10 +172,12 @@ func (s *Server) joinHandler(w http.ResponseWriter, req *http.Request) {
 	command := &raft.DefaultJoinCommand{}
 
 	if err := json.NewDecoder(req.Body).Decode(&command); err != nil {
+    log.Printf("Error handling join: %s", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	if _, err := s.raftServer.Do(command); err != nil {
+    log.Printf("Error handling join: %s", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
