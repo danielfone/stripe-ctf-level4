@@ -1,7 +1,6 @@
 package server
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"github.com/goraft/raft"
@@ -16,6 +15,7 @@ import (
 	"net/http"
 	"path/filepath"
 	"sync"
+	"time"
 )
 
 // The raftd server is a combination of the Raft server and an HTTP
@@ -30,11 +30,12 @@ type Server struct {
 	httpServer *http.Server
 	sql        *sql.SQL
 	mutex      sync.RWMutex
+	client     *transport.Client
 }
 
 // Creates a new server.
-func New(path string, listen string) (*Server, error) {
-  cs, err := transport.Encode(listen)
+func New(path, listen string) (*Server, error) {
+  cs, err := transport.Encode(path +"/"+listen)
   if err != nil {
   	return nil, err
   }
@@ -48,6 +49,7 @@ func New(path string, listen string) (*Server, error) {
     connectionString: cs, 
 		sql:    sql.NewSQL(sqlPath),
 		router: mux.NewRouter(),
+		client:  transport.NewClient(),
 	}
 
 	// Read existing name or generate a new one.
@@ -59,7 +61,7 @@ func New(path string, listen string) (*Server, error) {
 			panic(err)
 		}
 	}
-
+  log.Println("My name is "+ s.name)
 	return s, nil
 }
 
@@ -71,10 +73,12 @@ func (s *Server) ListenAndServe(leader string) error {
 
 	// Initialize and start Raft server.
 	transporter := raft.NewHTTPTransporter("/raft")
+  transporter.Transport.Dial = transport.UnixDialer
 	s.raftServer, err = raft.NewServer(s.name, s.path, transporter, nil, s.sql, "")
 	if err != nil {
 		log.Fatal(err)
 	}
+  
 	transporter.Install(s.raftServer, s)
 	s.raftServer.Start()
 
@@ -136,18 +140,29 @@ func (s *Server) HandleFunc(pattern string, handler func(http.ResponseWriter, *h
 
 // Joins to the leader of an existing cluster.
 func (s *Server) Join(leader string) error {
+
 	command := &raft.DefaultJoinCommand{
 		Name:             s.raftServer.Name(),
 		ConnectionString: s.connectionString,
 	}
 
-	var b bytes.Buffer
-	json.NewEncoder(&b).Encode(command)
-	resp, err := http.Post(fmt.Sprintf("http://%s/join", leader), "application/json", &b)
-	resp.Body.Close()
+	b := util.JSONEncode(command)
+
+	cs, err := transport.Encode(leader)
 	if err != nil {
 		return err
 	}
+
+	for {
+		_, err := s.client.SafePost(cs, "/join", b)
+		if err != nil {
+			log.Printf("Unable to join cluster: %s", err)
+			time.Sleep(1 * time.Second)
+			continue
+		}
+		return nil
+	}
+
 
 	return nil
 }
@@ -174,6 +189,8 @@ func (s *Server) sqlHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 	query := string(b)
+
+  log.Printf("Current Leader: %s", s.raftServer.Leader())
 
 	// Execute the command against the Raft server.
 	_, err = s.raftServer.Do(command.NewQueryCommand(query))

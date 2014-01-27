@@ -3,12 +3,15 @@ package main
 import (
 	"flag"
 	"fmt"
+	"math/rand"
 	"io/ioutil"
 	"os"
 	"os/signal"
 	"path/filepath"
 	"stripe-ctf.com/sqlcluster/log"
+  "stripe-ctf.com/sqlcluster/command"
 	"stripe-ctf.com/sqlcluster/server"
+	"github.com/goraft/raft"
 	"syscall"
 	"time"
 )
@@ -73,7 +76,7 @@ OPTIONS:
 		os.Exit(1)
 	}
 
-	log.SetVerbose(verbose)
+	log.SetVerbose(true)
 
 	if directory == "" {
 		var err error
@@ -94,6 +97,13 @@ OPTIONS:
 	if err := os.Chdir(directory); err != nil {
 		log.Fatalf("Error while changing to storage directory: %s", err)
 	}
+  
+  raft.RegisterCommand(&command.QueryCommand{})
+
+	raft.SetLogLevel(raft.Trace)
+	log.Print("Raft debugging enabled.")
+
+	rand.Seed(time.Now().UnixNano())
 
 	// Make sure we don't leave stranded sqlclusters lying around
 	go func() {
