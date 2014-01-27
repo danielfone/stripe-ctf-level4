@@ -194,18 +194,20 @@ func (s *Server) sqlHandler(w http.ResponseWriter, req *http.Request) {
   leader     := raftServer.Leader()
 
   if raftServer.Name() != leader {
-    leaderCS := raftServer.Peers()[leader].ConnectionString
-    log.Printf("Attempting to proxy to primary: %v", leaderCS)
-    resp, err := s.client.SafePost(leaderCS, "/sql", bytes.NewReader(b))
-    if err != nil {
-      http.Error(w, "Couldn't proxy response to primary: " + err.Error(), http.StatusServiceUnavailable)
+    if leaderPeer, ok := raftServer.Peers()[leader]; ok {
+      leaderCS := leaderPeer.ConnectionString
+      log.Printf("Attempting to proxy to primary: %v", leaderCS)
+      resp, err := s.client.SafePost(leaderCS, "/sql", bytes.NewReader(b))
+      if err != nil {
+        http.Error(w, "Couldn't proxy response to primary: " + err.Error(), http.StatusServiceUnavailable)
+      }
+      bytes, err := ioutil.ReadAll(resp)
+      if err != nil {
+        http.Error(w, "Couldn't proxy response to primary: " + err.Error(), http.StatusServiceUnavailable)
+      }
+      w.Write(bytes)
+      return
     }
-    bytes, err := ioutil.ReadAll(resp)
-    if err != nil {
-      http.Error(w, "Couldn't proxy response to primary: " + err.Error(), http.StatusServiceUnavailable)
-    }
-    w.Write(bytes)
-    return
   }
 
 	// Execute the command against the Raft server.
