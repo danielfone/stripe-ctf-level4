@@ -11,7 +11,7 @@ import (
 	"stripe-ctf.com/sqlcluster/util"
 	"github.com/gorilla/mux"
 	"io/ioutil"
-	"log"
+	"stripe-ctf.com/sqlcluster/log"
 	"math/rand"
 	"net/http"
 	"path/filepath"
@@ -23,6 +23,7 @@ import (
 type Server struct {
 	name       string
 	path       string
+  listen     string
   connectionString string
 	router     *mux.Router
 	raftServer raft.Server
@@ -43,6 +44,7 @@ func New(path string, listen string) (*Server, error) {
 
 	s := &Server{
 		path:   path,
+    listen: listen,
     connectionString: cs, 
 		sql:    sql.NewSQL(sqlPath),
 		router: mux.NewRouter(),
@@ -136,7 +138,7 @@ func (s *Server) HandleFunc(pattern string, handler func(http.ResponseWriter, *h
 func (s *Server) Join(leader string) error {
 	command := &raft.DefaultJoinCommand{
 		Name:             s.raftServer.Name(),
-		ConnectionString: s.connectionString(),
+		ConnectionString: s.connectionString,
 	}
 
 	var b bytes.Buffer
