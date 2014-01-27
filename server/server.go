@@ -208,10 +208,11 @@ func (s *Server) sqlHandler(w http.ResponseWriter, req *http.Request) {
     return
   }
 
-
 	// Execute the command against the Raft server.
-	_, err = s.raftServer.Do(command.NewQueryCommand(query))
+	response, err := s.raftServer.Do(command.NewQueryCommand(query))
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 	}
+  
+  w.Write(response.([]byte))
 }
