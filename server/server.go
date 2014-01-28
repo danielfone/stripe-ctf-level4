@@ -1,7 +1,7 @@
 package server
 
 import (
-//  "bytes"
+  "bytes"
 	"fmt"
 	"github.com/goraft/raft"
 	"stripe-ctf.com/sqlcluster/command"
@@ -82,26 +82,6 @@ func (s *Server) ListenAndServe(leader string) error {
 	transporter.Install(s.raftServer, s)
 	s.raftServer.Start()
 
-
-
-	log.Println("Initializing HTTP server")
-
-	// Initialize and start HTTP server.
-	s.httpServer = &http.Server{
-		Handler: s.router,
-	}
-
-	s.router.HandleFunc("/sql", s.sqlHandler).Methods("POST")
-	s.router.HandleFunc("/join", s.joinHandler).Methods("POST")
-
-	// Start Unix transport
-	l, err := transport.Listen(s.listen)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	log.Println("Listening at:", s.connectionString)
-
 	if leader != "" {
 		// Join to leader if specified.
 
@@ -130,6 +110,24 @@ func (s *Server) ListenAndServe(leader string) error {
 	} else {
 		log.Println("Recovered from log")
 	}
+
+	log.Println("Initializing HTTP server")
+
+	// Initialize and start HTTP server.
+	s.httpServer = &http.Server{
+		Handler: s.router,
+	}
+
+	s.router.HandleFunc("/sql", s.sqlHandler).Methods("POST")
+	s.router.HandleFunc("/join", s.joinHandler).Methods("POST")
+
+	// Start Unix transport
+	l, err := transport.Listen(s.listen)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	log.Println("Listening at:", s.connectionString)
 
 	return  s.httpServer.Serve(l)
 }
@@ -196,27 +194,27 @@ func (s *Server) sqlHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 	query := string(b)
-//  raftServer := s.raftServer
-//  leader     := raftServer.Leader()
+  raftServer := s.raftServer
+  leader     := raftServer.Leader()
 
-  //if raftServer.Name() != leader {
-  //  if leaderPeer, ok := raftServer.Peers()[leader]; ok {
-  //    leaderCS := leaderPeer.ConnectionString
-  //    log.Printf("Attempting to proxy to primary: %v", leaderCS)
-  //    resp, err := s.client.SafePost(leaderCS, "/sql", bytes.NewReader(b))
-  //    if err != nil {
-  //      http.Error(w, "Couldn't proxy response to primary: " + err.Error(), http.StatusServiceUnavailable)
-  //      return
-  //    }
-  //    bytes, err := ioutil.ReadAll(resp)
-  //    if err != nil {
-  //      http.Error(w, "Couldn't proxy response to primary: " + err.Error(), http.StatusServiceUnavailable)
-  //      return
-  //    }
-  //    w.Write(bytes)
-  //    return
-  //  }
-  //}
+  if raftServer.Name() != leader {
+    if leaderPeer, ok := raftServer.Peers()[leader]; ok {
+      leaderCS := leaderPeer.ConnectionString
+      log.Printf("Attempting to proxy to primary: %v", leaderCS)
+      resp, err := s.client.SafePost(leaderCS, "/sql", bytes.NewReader(b))
+      if err != nil {
+        http.Error(w, "Couldn't proxy response to primary: " + err.Error(), http.StatusServiceUnavailable)
+        return
+      }
+      bytes, err := ioutil.ReadAll(resp)
+      if err != nil {
+        http.Error(w, "Couldn't proxy response to primary: " + err.Error(), http.StatusServiceUnavailable)
+        return
+      }
+      w.Write(bytes)
+      return
+    }
+  }
 
 	// Execute the command against the Raft server.
 	response, err := s.raftServer.Do(command.NewQueryCommand(query))
