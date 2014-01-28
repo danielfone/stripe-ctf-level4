@@ -131,7 +131,7 @@ func (s *Server) ListenAndServe(leader string) error {
 		log.Println("Recovered from log")
 	}
 
-	return s.httpServer.Serve(l)
+	return  s.httpServer.Serve(l)
 }
 
 // This is a hack around Gorilla mux not providing the correct net/http
@@ -206,10 +206,12 @@ func (s *Server) sqlHandler(w http.ResponseWriter, req *http.Request) {
       resp, err := s.client.SafePost(leaderCS, "/sql", bytes.NewReader(b))
       if err != nil {
         http.Error(w, "Couldn't proxy response to primary: " + err.Error(), http.StatusServiceUnavailable)
+        return
       }
       bytes, err := ioutil.ReadAll(resp)
       if err != nil {
         http.Error(w, "Couldn't proxy response to primary: " + err.Error(), http.StatusServiceUnavailable)
+        return
       }
       w.Write(bytes)
       return
