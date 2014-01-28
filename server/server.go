@@ -154,7 +154,7 @@ func (s *Server) Join(leader string) error {
 	}
 
 	for {
-    time.Sleep(time.Duration(rand.Intn(500)) * time.Millisecond)
+    time.Sleep(time.Duration(rand.Intn(500)+500) * time.Millisecond)
 		_, err := s.client.SafePost(cs, "/join", b)
 		if err != nil {
 			log.Printf("Unable to join cluster: %s", err)
