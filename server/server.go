@@ -199,24 +199,24 @@ func (s *Server) sqlHandler(w http.ResponseWriter, req *http.Request) {
   raftServer := s.raftServer
   leader     := raftServer.Leader()
 
-  if raftServer.Name() != leader {
-    if leaderPeer, ok := raftServer.Peers()[leader]; ok {
-      leaderCS := leaderPeer.ConnectionString
-      log.Printf("Attempting to proxy to primary: %v", leaderCS)
-      resp, err := s.client.SafePost(leaderCS, "/sql", bytes.NewReader(b))
-      if err != nil {
-        http.Error(w, "Couldn't proxy response to primary: " + err.Error(), http.StatusServiceUnavailable)
-        return
-      }
-      bytes, err := ioutil.ReadAll(resp)
-      if err != nil {
-        http.Error(w, "Couldn't proxy response to primary: " + err.Error(), http.StatusServiceUnavailable)
-        return
-      }
-      w.Write(bytes)
-      return
-    }
-  }
+  //if raftServer.Name() != leader {
+  //  if leaderPeer, ok := raftServer.Peers()[leader]; ok {
+  //    leaderCS := leaderPeer.ConnectionString
+  //    log.Printf("Attempting to proxy to primary: %v", leaderCS)
+  //    resp, err := s.client.SafePost(leaderCS, "/sql", bytes.NewReader(b))
+  //    if err != nil {
+  //      http.Error(w, "Couldn't proxy response to primary: " + err.Error(), http.StatusServiceUnavailable)
+  //      return
+  //    }
+  //    bytes, err := ioutil.ReadAll(resp)
+  //    if err != nil {
+  //      http.Error(w, "Couldn't proxy response to primary: " + err.Error(), http.StatusServiceUnavailable)
+  //      return
+  //    }
+  //    w.Write(bytes)
+  //    return
+  //  }
+  //}
 
 	// Execute the command against the Raft server.
 	response, err := s.raftServer.Do(command.NewQueryCommand(query))
