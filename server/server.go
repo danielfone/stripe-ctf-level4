@@ -87,8 +87,6 @@ func (s *Server) ListenAndServe(leader string) error {
 
 	log.Println("Listening at:", s.connectionString)
 
-  serve := s.httpServer.Serve(l)
-
 	log.Printf("Initializing Raft Server: %s", s.path)
 
 	// Initialize and start Raft server.
@@ -131,7 +129,7 @@ func (s *Server) ListenAndServe(leader string) error {
 		log.Println("Recovered from log")
 	}
 
-	return serve
+	return s.httpServer.Serve(l)
 }
 
 // This is a hack around Gorilla mux not providing the correct net/http
