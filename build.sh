@@ -31,8 +31,8 @@ else
     export GOPATH="$cwd/.build:$GOPATH"
 fi
 
-echo "Fetching sqlcluster dependencies..."
-go get -d
+#echo "Fetching sqlcluster dependencies..."
+#go get -d
 
 echo "Building sqlcluster binary..."
 go build -o sqlcluster
