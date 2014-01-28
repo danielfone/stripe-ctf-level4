@@ -1,7 +1,7 @@
 package server
 
 import (
-  "bytes"
+//  "bytes"
 	"fmt"
 	"github.com/goraft/raft"
 	"stripe-ctf.com/sqlcluster/command"
@@ -196,8 +196,8 @@ func (s *Server) sqlHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 	query := string(b)
-  raftServer := s.raftServer
-  leader     := raftServer.Leader()
+//  raftServer := s.raftServer
+//  leader     := raftServer.Leader()
 
   //if raftServer.Name() != leader {
   //  if leaderPeer, ok := raftServer.Peers()[leader]; ok {
