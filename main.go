@@ -119,7 +119,7 @@ OPTIONS:
 		if err != nil {
 			log.Fatal(err)
 		}
-
+		time.Sleep(1 * time.Second)
 		if err := s.ListenAndServe(join); err != nil {
 			log.Fatal(err)
 		}
