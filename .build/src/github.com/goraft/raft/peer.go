@@ -13,13 +13,13 @@ import (
 
 // A peer is a reference to another server involved in the consensus protocol.
 type Peer struct {
-	server           *server
-	Name             string `json:"name"`
-	ConnectionString string `json:"connectionString"`
-	prevLogIndex     uint64
-	mutex            sync.RWMutex
-	stopChan         chan bool
-	heartbeatTimeout time.Duration
+	server            *server
+	Name              string `json:"name"`
+	ConnectionString  string `json:"connectionString"`
+	prevLogIndex      uint64
+	mutex             sync.RWMutex
+	stopChan          chan bool
+	heartbeatInterval time.Duration
 }
 
 //------------------------------------------------------------------------------
@@ -29,12 +29,12 @@ type Peer struct {
 //------------------------------------------------------------------------------
 
 // Creates a new peer.
-func newPeer(server *server, name string, connectionString string, heartbeatTimeout time.Duration) *Peer {
+func newPeer(server *server, name string, connectionString string, heartbeatInterval time.Duration) *Peer {
 	return &Peer{
-		server:           server,
-		Name:             name,
-		ConnectionString: connectionString,
-		heartbeatTimeout: heartbeatTimeout,
+		server:            server,
+		Name:              name,
+		ConnectionString:  connectionString,
+		heartbeatInterval: heartbeatInterval,
 	}
 }
 
@@ -45,8 +45,8 @@ func newPeer(server *server, name string, connectionString string, heartbeatTime
 //------------------------------------------------------------------------------
 
 // Sets the heartbeat timeout.
-func (p *Peer) setHeartbeatTimeout(duration time.Duration) {
-	p.heartbeatTimeout = duration
+func (p *Peer) setHeartbeatInterval(duration time.Duration) {
+	p.heartbeatInterval = duration
 }
 
 //--------------------------------------
@@ -116,9 +116,9 @@ func (p *Peer) heartbeat(c chan bool) {
 
 	c <- true
 
-	ticker := time.Tick(p.heartbeatTimeout)
+	ticker := time.Tick(p.heartbeatInterval)
 
-	debugln("peer.heartbeat: ", p.Name, p.heartbeatTimeout)
+	debugln("peer.heartbeat: ", p.Name, p.heartbeatInterval)
 
 	for {
 		select {
@@ -146,14 +146,12 @@ func (p *Peer) heartbeat(c chan bool) {
 func (p *Peer) flush() {
 	debugln("peer.heartbeat.flush: ", p.Name)
 	prevLogIndex := p.getPrevLogIndex()
+	term := p.server.currentTerm
+
 	entries, prevLogTerm := p.server.log.getEntriesAfter(prevLogIndex, p.server.maxLogEntriesPerRequest)
 
-	if p.server.State() != Leader {
-		return
-	}
-
 	if entries != nil {
-		p.sendAppendEntriesRequest(newAppendEntriesRequest(p.server.currentTerm, prevLogIndex, prevLogTerm, p.server.log.CommitIndex(), p.server.name, entries))
+		p.sendAppendEntriesRequest(newAppendEntriesRequest(term, prevLogIndex, prevLogTerm, p.server.log.CommitIndex(), p.server.name, entries))
 	} else {
 		p.sendSnapshotRequest(newSnapshotRequest(p.server.name, p.server.lastSnapshot))
 	}
@@ -170,7 +168,7 @@ func (p *Peer) sendAppendEntriesRequest(req *AppendEntriesRequest) {
 
 	resp := p.server.Transporter().SendAppendEntriesRequest(p.server, p, req)
 	if resp == nil {
-		p.server.DispatchEvent(newEvent(HeartbeatTimeoutEventType, p, nil))
+		p.server.DispatchEvent(newEvent(HeartbeatIntervalEventType, p, nil))
 		debugln("peer.append.timeout: ", p.server.Name(), "->", p.Name)
 		return
 	}
@@ -192,13 +190,13 @@ func (p *Peer) sendAppendEntriesRequest(req *AppendEntriesRequest) {
 		// If it was unsuccessful then decrement the previous log index and
 		// we'll try again next time.
 	} else {
-		if resp.Term() > p.server.Term() || resp.CommitIndex() > p.server.CommitIndex() {
+		if resp.Term() > p.server.Term() {
 			// this happens when there is a new leader comes up that this *leader* has not
 			// known yet.
 			// this server can know until the new leader send a ae with higher term
 			// or this server finish processing this response.
 			debugln("peer.append.resp.not.update: new.leader.found")
-		} else if resp.CommitIndex() >= p.prevLogIndex {
+		} else if resp.Term() == req.Term && resp.CommitIndex() >= p.prevLogIndex {
 			// we may miss a response from peer
 			// so maybe the peer has committed the logs we just sent
 			// but we did not receive the successful reply and did not increase
