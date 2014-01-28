@@ -69,6 +69,24 @@ func New(path, listen string) (*Server, error) {
 func (s *Server) ListenAndServe(leader string) error {
 	var err error
 
+	log.Println("Initializing HTTP server")
+
+	// Initialize and start HTTP server.
+	s.httpServer = &http.Server{
+		Handler: s.router,
+	}
+
+	s.router.HandleFunc("/sql", s.sqlHandler).Methods("POST")
+	s.router.HandleFunc("/join", s.joinHandler).Methods("POST")
+
+	// Start Unix transport
+	l, err := transport.Listen(s.listen)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	log.Println("Listening at:", s.connectionString)
+
 	log.Printf("Initializing Raft Server: %s", s.path)
 
 	// Initialize and start Raft server.
@@ -110,24 +128,6 @@ func (s *Server) ListenAndServe(leader string) error {
 	} else {
 		log.Println("Recovered from log")
 	}
-
-	log.Println("Initializing HTTP server")
-
-	// Initialize and start HTTP server.
-	s.httpServer = &http.Server{
-		Handler: s.router,
-	}
-
-	s.router.HandleFunc("/sql", s.sqlHandler).Methods("POST")
-	s.router.HandleFunc("/join", s.joinHandler).Methods("POST")
-
-	// Start Unix transport
-	l, err := transport.Listen(s.listen)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	log.Println("Listening at:", s.connectionString)
 
 	return  s.httpServer.Serve(l)
 }
