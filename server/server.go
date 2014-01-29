@@ -96,7 +96,10 @@ func (s *Server) ListenAndServe(leader string) error {
 	if err != nil {
 		log.Fatal(err)
 	}
-  
+	//DefaultHeartbeatInterval = 50 * time.Millisecond
+  //DefaultElectionTimeout = 150 * time.Millisecond
+  s.raftServer.SetHeartbeatInterval(500 * time.Millisecond)
+  s.raftServer.SetElectionTimeout(1500 * time.Millisecond)
 	transporter.Install(s.raftServer, s)
 	s.raftServer.Start()
 
