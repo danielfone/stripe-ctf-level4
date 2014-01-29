@@ -97,6 +97,10 @@ OPTIONS:
 	if err := os.Chdir(directory); err != nil {
 		log.Fatalf("Error while changing to storage directory: %s", err)
 	}
+
+	raft.SetLogLevel(raft.Debug)
+	log.Print("Raft debugging enabled.")
+
   
   raft.RegisterCommand(&command.QueryCommand{})
 
