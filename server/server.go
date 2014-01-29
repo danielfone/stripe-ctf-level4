@@ -78,10 +78,6 @@ func (s *Server) ListenAndServe(leader string) error {
 	if err != nil {
 		log.Fatal(err)
 	}
-	//DefaultHeartbeatInterval = 50 * time.Millisecond
-  //DefaultElectionTimeout = 150 * time.Millisecond
-  s.raftServer.SetHeartbeatInterval(500 * time.Millisecond)
-  s.raftServer.SetElectionTimeout(1500 * time.Millisecond)
 	transporter.Install(s.raftServer, s)
 	s.raftServer.Start()
 
@@ -93,9 +89,11 @@ func (s *Server) ListenAndServe(leader string) error {
 		if !s.raftServer.IsLogEmpty() {
 			log.Fatal("Cannot join with an existing log")
 		}
-		if err := s.Join(leader); err != nil {
-			log.Fatal(err)
-		}
+    go func() {
+  		if err := s.Join(leader); err != nil {
+  			log.Fatal(err)
+  		}
+    }()
 
 	} else if s.raftServer.IsLogEmpty() {
 		// Initialize the server by joining itself.
@@ -131,7 +129,6 @@ func (s *Server) ListenAndServe(leader string) error {
 	}
 
 	log.Println("Listening at:", s.connectionString)
-
 
 	return s.httpServer.Serve(l)
 }
