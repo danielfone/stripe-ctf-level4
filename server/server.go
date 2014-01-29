@@ -222,6 +222,7 @@ func (s *Server) sqlHandler(w http.ResponseWriter, req *http.Request) {
 	// Execute the command against the Raft server.
 	response, err := s.raftServer.Do(command.NewQueryCommand(query))
 	if err != nil {
+    time.Sleep(10 * time.Second)
 		http.Error(w, err.Error(), http.StatusBadRequest)
     return
 	}
