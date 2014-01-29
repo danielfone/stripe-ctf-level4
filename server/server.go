@@ -97,7 +97,7 @@ func (s *Server) ListenAndServe(leader string) error {
 		log.Fatal(err)
 	}
 	transporter.Install(s.raftServer, s)
-  s.raftServer.SetElectionTimeout(time.Duration(rand.Intn(100)+150) * time.Millisecond)
+  s.raftServer.SetElectionTimeout(time.Duration(rand.Intn(200)+150) * time.Millisecond)
 	s.raftServer.Start()
 
 	if leader != "" {
