@@ -110,7 +110,7 @@ OPTIONS:
 	// Make sure we don't leave stranded sqlclusters lying around
 	go func() {
 		for {
-			runtime.Gosched(2 * time.Second)
+			time.Sleep(2 * time.Second)
 			if os.Getppid() == 1 {
 				log.Fatal("Parent process exited; terminating")
 			}
