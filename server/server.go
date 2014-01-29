@@ -217,13 +217,16 @@ func (s *Server) sqlHandler(w http.ResponseWriter, req *http.Request) {
       log.Println("Proxied: ", string(bytes))
       w.Write(bytes)
       return
+    } else {
+      http.Error(w, "Unknown leader", http.StatusServiceUnavailable)
+      return
     }
   }
 
 	// Execute the command against the Raft server.
 	response, err := s.raftServer.Do(command.NewQueryCommand(query))
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		http.Error(w, err.Error(), http.StatusServiceUnavailable)
     return
 	}
   
