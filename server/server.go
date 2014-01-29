@@ -160,6 +160,7 @@ func (s *Server) Join(leader string) error {
 			log.Printf("Unable to join cluster: %s", err)
 			continue
 		}
+    log.Println("Successfully joined cluster")
 		return nil
 	}
 
@@ -183,6 +184,7 @@ func (s *Server) joinHandler(w http.ResponseWriter, req *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+  log.Println("Successfully handler join request: ", command.Name)
 }
 
 func (s *Server) sqlHandler(w http.ResponseWriter, req *http.Request) {
