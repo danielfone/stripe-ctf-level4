@@ -153,7 +153,7 @@ func (s *Server) Join(leader string) error {
 
 	for {
     //time.Sleep(time.Duration(rand.Intn(500)+100) * time.Millisecond)
-    time.Sleep(1 * time.Second)
+    time.Sleep(100 * time.Millisecond)
   	b := util.JSONEncode(command)
 		_, err := s.client.SafePost(cs, "/join", b)
 		if err != nil {
@@ -200,6 +200,18 @@ func (s *Server) sqlHandler(w http.ResponseWriter, req *http.Request) {
   leader     := raftServer.Leader()
 
   if raftServer.Name() != leader {
+    
+    wait := make(chan bool, 1)
+    if _, ok := raftServer.Peers()[leader]; ! ok {
+  		s.raftServer.AddEventListener(raft.LeaderChangeEventType, func(e raft.Event) {
+  			leader = e.Value().(string)
+  			if leader != "" {
+  				wait <- true
+  			}
+  		})
+  		<- wait
+    }
+    
     if leaderPeer, ok := raftServer.Peers()[leader]; ok {
       leaderCS := leaderPeer.ConnectionString
       log.Printf("Attempting to proxy to primary: %v", leaderCS)
