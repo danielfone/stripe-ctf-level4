@@ -97,8 +97,8 @@ func (s *Server) ListenAndServe(leader string) error {
 		log.Fatal(err)
 	}
 	transporter.Install(s.raftServer, s)
-  s.raftServer.SetHeartbeatInterval(100 * time.Millisecond)
-  s.raftServer.SetElectionTimeout(300 * time.Millisecond)
+  s.raftServer.SetHeartbeatInterval(50 * time.Millisecond)
+  s.raftServer.SetElectionTimeout(400 * time.Millisecond)
 	s.raftServer.Start()
 
 	if leader != "" {
@@ -222,7 +222,6 @@ func (s *Server) sqlHandler(w http.ResponseWriter, req *http.Request) {
 	// Execute the command against the Raft server.
 	response, err := s.raftServer.Do(command.NewQueryCommand(query))
 	if err != nil {
-    time.Sleep(10 * time.Second)
 		http.Error(w, err.Error(), http.StatusBadRequest)
     return
 	}
