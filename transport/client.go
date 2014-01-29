@@ -6,6 +6,7 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"stripe-ctf.com/sqlcluster/log"  
 )
 
 type Client struct {
@@ -33,6 +34,7 @@ func NewClient() *Client {
 
 func (s *Client) SafePost(connectionString, path string, reqB io.Reader) (io.Reader, error) {
 	url := connectionString + path
+  log.Println("SafePost", url)
 	resp, err := s.client.Post(url, "application/octet-stream", reqB)
 	if err != nil {
 		return nil, err

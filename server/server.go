@@ -35,7 +35,7 @@ type Server struct {
 
 // Creates a new server.
 func New(path, listen string) (*Server, error) {
-  cs, err := transport.Encode(path +"/"+listen)
+  cs, err := transport.Encode(listen)
   if err != nil {
   	return nil, err
   }
