@@ -161,6 +161,8 @@ func NewServer(name string, path string, transporter Transporter, stateMachine S
 		panic("raft: Transporter required")
 	}
 
+  debugln("DF - New raft server")
+
 	s := &server{
 		name:                    name,
 		path:                    path,
