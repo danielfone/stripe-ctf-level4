@@ -98,8 +98,8 @@ OPTIONS:
 		log.Fatalf("Error while changing to storage directory: %s", err)
 	}
 
-	raft.SetLogLevel(raft.Trace)
-	log.Print("Raft debugging enabled.")
+	//raft.SetLogLevel(raft.Trace)
+	//log.Print("Raft debugging enabled.")
 
   
   raft.RegisterCommand(&command.QueryCommand{})
