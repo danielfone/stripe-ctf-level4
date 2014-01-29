@@ -5,3 +5,4 @@ sqlcluster
 /test/data/octopus.version
 /test/data/downloaded_test_cases/
 *.log
+.build/src/github.com/goraft/raft.old
