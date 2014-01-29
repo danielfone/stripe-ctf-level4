@@ -214,6 +214,7 @@ func (s *Server) sqlHandler(w http.ResponseWriter, req *http.Request) {
         http.Error(w, "Couldn't proxy response to primary: " + err.Error(), http.StatusServiceUnavailable)
         return
       }
+      log.Println("Proxied: ", string(bytes))
       w.Write(bytes)
       return
     }
