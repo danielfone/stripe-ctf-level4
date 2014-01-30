@@ -1,3 +1,11 @@
+## Solution
+
+I was fortunate enough to reach this level early, and pass it before Stripe improved octopus. As such I passed it with [my first attempt](https://github.com/danielfone/stripe-ctf-level4/commit/10be54c6915d1492791bb147a0c9daeb3c27003d), simply by removing the failover (node0 becomes Single Point of Failure) and forwarding requests from the secondaries to the primary.
+
+The remaining commits are my futile attempts to pass this level after the SPOF check was added to the tests. Looking at the code for successful solutions, I can see I was on the right path but needed to invest more time into making my command forwarding more robust.
+
+---
+
 # SQLCluster
 
 SQLCluster makes your SQLite highly-available.
